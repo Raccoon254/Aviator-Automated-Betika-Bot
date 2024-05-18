@@ -16,6 +16,8 @@ dbConnection.connect((err) => {
   console.log('Connected to the database.');
 });
 
+//TODO! -- Fix deprecated code
+
 app.use(express.static('public'));
 const ARIMA = require('arima');
 
@@ -33,10 +35,6 @@ async function predictNextValue() {
   console.log(predictedValue)
   return predictedValue;
 }
-
-
-
-
 
 
 io.on('connection', (socket) => {
