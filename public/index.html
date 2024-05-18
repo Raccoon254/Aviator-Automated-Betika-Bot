@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Line Graph</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body {
+            background-color: #222;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #chartContainer {
+            background-color: #333;
+            border-radius: 15px;
+            padding: 20px;
+            width: 80%;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: auto !important;
+        }
+    </style>`
+</head>
+<body>
+    
+    <div id="chartContainer">
+
+
+        <canvas id="lineChart"></canvas>
+        <p id="accuracyRate">Accuracy rate: N/A</p>
+        <p id="predictedValue">Predicted value: N/A</p>
+        <p id="accuracyRate">Accuracy rate: N/A</p>
+<table id="predictionTable" border="1">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Predicted Value</th>
+      <th>Actual Value</th>
+      <th>Correct</th>
+    </tr>
+  </thead>
+  <tbody id="predictionTableBody"></tbody>
+</table>
+
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
