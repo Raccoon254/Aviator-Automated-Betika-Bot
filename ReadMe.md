@@ -1,4 +1,4 @@
-# Aviator Betting Bot
+betika Aviator Betting Bot
 
 The Aviator Betting Bot is an automation tool designed to monitor and place bets on the Aviator game automatically. Built using Node.js, TensorFlow, Puppeteer, and other powerful libraries, the bot can streamline the betting process by analyzing data patterns and placing bets based on specified conditions. The goal is to optimize your betting strategy by leveraging automation and data-driven insights.
 
