@@ -4,8 +4,8 @@
   "description": "",
   "main": "main.js",
   "scripts": {
-    "test": "node index.js",
-    "start": "node mozzart.js"
+    "start": "node index.js",
+    "dev": "node index.js"
   },
   "keywords": [
     "betting",

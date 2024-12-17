@@ -1,52 +1,234 @@
-betika Aviator Betting Bot
+# 🎮 Aviator Betting Bot
 
-The Aviator Betting Bot is an automation tool designed to monitor and place bets on the Aviator game automatically. Built using Node.js, TensorFlow, Puppeteer, and other powerful libraries, the bot can streamline the betting process by analyzing data patterns and placing bets based on specified conditions. The goal is to optimize your betting strategy by leveraging automation and data-driven insights.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D%2014.0.0-brightgreen.svg)](https://nodejs.org/)
+[![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/yourusername/aviator-bot/issues)
 
-## Table of Contents
-- [Installation](#installation)
-- [How to Run](#how-to-run)
-- [How It Works](#how-it-works)
-- [Project Structure](#project-structure)
-- [Key Features](#key-features)
-- [Future Enhancements](#future-enhancements)
-- [Contributing](#contributing)
+An intelligent automation tool for the Aviator game, leveraging Node.js, Puppeteer, and advanced betting strategies. This bot automates the betting process while implementing smart risk management and real-time analytics.
 
-## Installation
-To get started, clone the repository and install the required dependencies:
+## 📑 Table of Contents
+
+- [Features](#-features)
+- [Requirements](#-requirements)
+- [Installation](#-installation)
+- [Configuration](#-configuration)
+- [Usage](#-usage)
+- [How It Works](#-how-it-works)
+- [Architecture](#-architecture)
+- [Strategies](#-strategies)
+- [Contributing](#-contributing)
+- [Future Enhancements](#-future-enhancements)
+- [FAQ](#-faq)
+- [Disclaimer](#-disclaimer)
+
+## ✨ Features
+
+### Core Features
+- 🤖 Fully automated betting with customizable strategies
+- 📊 Real-time game monitoring and analysis
+- 💰 Smart bankroll management
+- 📈 Comprehensive statistics tracking
+- 🔄 Martingale and custom betting progressions
+- ⚡ Fast and reliable browser automation
+- 📝 Detailed logging and error handling
+
+### Advanced Features
+- 🎯 Multiple pre-configured betting strategies
+- 🛑 Automatic stop-loss and take-profit
+- 📱 Optional web interface for monitoring
+- 🗄️ Database integration for bet history
+- 📊 Statistical analysis tools
+
+## 💻 Requirements
+
+- Node.js (version >= 14.0.0)
+- npm (comes with Node.js)
+- MySQL (optional, for database features)
+- Modern web browser
+- Stable internet connection
+
+## 🚀 Installation
 
 1. Clone the repository:
-    ```bash
-    git clone https://github.com/Raccoon254/Aviator-Automated-Betika-Bot.git aviator-bot
+```bash
+git clone https://github.com/Raccoon254/Aviator-Automated-Betika-Bot.git aviator-bot
     cd aviator-bot
-    ```
+```
 
-2. Install dependencies using npm:
-    ```bash
-    npm install
-    ```
+2. Install dependencies:
+```bash
+npm install
+```
 
-## How to Run
-The bot can be executed in different modes depending on your use case:
+   ## You can test the bot on the live site
+   ```bash
+   npm run start
+   ```
+   Or
+   ```bash
+   node index.js
+   ```
+   If you wish to make modification proceed to the next step
 
-1. **Start the bot with default settings**:
-    ```bash
-    npm start
-    ```
-   This command will run the script defined in `mozzart.js`.
+3. Set up configuration:
+```md
+# Edit config.js with your preferred settings
+```
 
-2. **Run in development mode** (uses `index.js`):
-    ```bash
-    npm run test
-    ```
+## ⚙️ Configuration
 
-3. Make sure you have your login credentials and necessary configurations (such as the betting strategy) set in the relevant files before running the bot.
+### Base Configuration
+```javascript
+// util/config.js
+module.exports = {
+    NAVIGATION: {
+        BASE_URL: 'https://spribe.co/welcome',
+        TIMEOUT: 60000
+    },
+    GAME: {
+        POLLING_INTERVAL: 4000,
+        MULTIPLIER_THRESHOLD: 1.50
+    }
+};
+```
 
-4. **Python Script**: If you want to utilize the prediction model or any AI functionality, ensure `predict.py` is properly configured. Run:
-    ```bash
-    python predict.py
-    ```
+### Strategy Configuration
+```javascript
+BETTING_STRATEGIES: {
+    CONSERVATIVE: {
+        initialBet: 1.00,
+        maxBet: 50.00,
+        minBet: 1.00,
+        targetMultiplier: 1.20,
+        stopLoss: 20.00,
+        takeProfit: 40.00
+    }
+    // ... other strategies
+}
+```
 
-## How It Works
+## 🎮 How It Works
+
+### 1. Game State Monitoring
+```javascript
+// game/gameMonitor.js
+async monitorGame() {
+    // Continuously monitor game state
+    const gameState = await this.getGameState(frame);
+    
+    // Check for game phases
+    if (this.isGameEnd(gameState.multiplier)) {
+        // Handle game end
+    }
+    
+    // Monitor for betting opportunities
+    if (this.shouldPlaceBet(gameState)) {
+        // Place bet
+    }
+}
+```
+
+### 2. Betting Logic
+The bot implements a sophisticated betting system:
+
+1. **Game Phase Detection**:
+   - Monitors multiplier changes
+   - Detects game start/end
+   - Tracks betting opportunities
+
+2. **Bet Placement**:
+   ```javascript
+   async placeBet(frame) {
+       // Set bet amount
+       await setBetAmount(frame);
+       
+       // Click bet button
+       await clickBetButton(frame);
+       
+       // Monitor result
+       await monitorBetResult(frame);
+   }
+   ```
+
+3. **Cashout Management**:
+   ```javascript
+   async checkCashout(frame) {
+       if (currentMultiplier >= targetMultiplier) {
+           await executeCashout(frame);
+       }
+   }
+   ```
+
+### 3. Risk Management
+- Implements stop-loss
+- Tracks consecutive losses
+- Manages bet sizing
+- Monitors total exposure
+
+## 🏗️ Architecture
+
+```plaintext
+aviator-bot/
+│
+├── database/               # Database integration
+│   └── database.js        # MySQL connection and queries
+│
+├── game/                  # Core game logic
+│   ├── betManager.js     # Bet execution
+│   ├── gameMonitor.js    # Game state tracking
+│   ├── statsTracker.js   # Statistics
+│   └── strategies.js     # Betting strategies
+│
+├── util/                 # Utilities
+│   ├── config.js        # Configuration
+│   ├── frameHelper.js   # Frame navigation
+│   └── logger.js        # Logging system
+│
+└── public/              # Web interface
+    ├── index.html
+    └── script.js
+```
+
+## 📊 Strategies
+
+### 1. Conservative Strategy
+- Initial bet: $1.00
+- Target multiplier: 1.20x
+- Stop loss: $20.00
+- Best for: Steady, low-risk play
+
+### 2. Moderate Strategy
+- Initial bet: $2.00
+- Target multiplier: 1.50x
+- Stop loss: $50.00
+- Best for: Balanced risk/reward
+
+### 3. Aggressive Strategy
+- Initial bet: $5.00
+- Target multiplier: 2.00x
+- Stop loss: $100.00
+- Best for: High risk, high reward
+
+### Custom Strategy Setup:
+```javascript
+const customStrategy = {
+    initialBet: 3.00,
+    maxBet: 75.00,
+    targetMultiplier: 1.35,
+    stopLoss: 30.00
+};
+```
+
+## Deprecated Support for major betting sites like betika
+- I removed configuration to test on live sites
+- If you need the configuration for that you can message me, I will try to help
+- I will try to add support for major betting sites in the future
+
+- removed the database integration for now, I will try to add it in the future
+- removed the web interface for now, I will try to add it in the future
+- removed the statistical analysis tools and prediction for now, I will try to add it in the future
+
+## How It Should Work Works
 The bot operates in a series of steps as outlined below:
 
 1. **Authentication**: Logs into the betting site using provided credentials.
@@ -58,40 +240,46 @@ The bot operates in a series of steps as outlined below:
 
 > **Note**: The monitoring and betting process will continue indefinitely. To stop the bot, you will need to manually interrupt the script execution using `CTRL + C` in your terminal.
 
-## Project Structure
-Here's a brief overview of the main files in this project:
 
-```plaintext
-.
-├── .idea/                 # IDE configuration files
-├── public/                # Static files served by the application
-├── .gitignore             # Specifies files to ignore in git repository
-├── Flow.html              # HTML file for visualizing the betting flow
-├── index.js               # Main JavaScript file for running the bot testing on spribe
-├── mozzart.js             # Core betting logic for mozzart betting
-├── package.json           # Project metadata and dependencies
-├── predict.py             # Python script for predictions using AI/ML
-├── ReadMe.md              # Project documentation
-├── screenshot.png         # Screenshot showcasing the bot in action
-└── server.js              # Optional server file for API endpoints
-```
+## 🔄 Future Enhancements
 
-## Key Features
-- **Automated Login and Navigation**: Handles login and game navigation with Puppeteer.
-- **Real-time Monitoring**: Continuously monitors and updates the Aviator values every few seconds.
-- **Customizable Betting Conditions**: Specify the conditions for placing bets, making it flexible to adapt to various strategies.
-- **Data Analysis**: Uses TensorFlow and statistical models to predict optimal betting strategies.
-- **Graphical Visualizations**: Displays trends and historical betting data using Chart.js.
-- **Multi-Protocol Support**: Can interact via web sockets using `socket.io` for dynamic updates.
+1. **Machine Learning Integration**
+   - Pattern recognition
+   - Predictive analytics
+   - Risk assessment
 
-## Future Enhancements
-In future versions of the Aviator Betting Bot, we plan to introduce the following enhancements:
+2. **Enhanced UI**
+   - Real-time statistics
+   - Performance graphs
+   - Strategy analysis
 
-1. **Auto-stopping of Bets After Loss Streaks**: Automatically stops placing bets if a predefined number of consecutive losses is reached.
-2. **Data Visualization**: Visualization of betting data using interactive charts and graphs for better understanding of trends and patterns.
-3. **Real-time Notifications**: Send real-time notifications (via email, SMS, or other messaging platforms) whenever a bet is placed.
-4. **Improved Accuracy in Predictions**: Integration of machine learning algorithms and statistical models to improve the bot's decision-making process.
-5. **Customizable Betting Strategies**: Define your own betting strategies based on specific criteria, allowing for a more personalized betting experience.
+3. **Advanced Features**
+   - Multiple account support
+   - API integration
+   - Mobile notifications
 
-## Contributing
-Contributions are welcome! If you'd like to improve this project or add new features, feel free to fork the repository and create a pull request.
+## ❓ FAQ
+
+**Q: How do I customize betting strategies?**
+A: Edit the strategy configurations in `util/config.js` or use the interactive prompt when starting the bot.
+
+**Q: Is this bot guaranteed to make profit?**
+A: No. This is a tool for automation and should be used responsibly with proper risk management.
+
+**Q: How do I handle errors?**
+A: Check the `logs/error.log` file for detailed error information. Most common issues are related to network connectivity or selector changes.
+
+## ⚠️ Disclaimer
+
+This bot is for educational purposes only. Gambling involves risk and you should never bet more than you can afford to lose. The developers are not responsible for any financial losses incurred through the use of this software.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+
+---
+Made with ❤️ by [Raccoon254](https://github.com/raccoon254)
