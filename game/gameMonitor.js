@@ -4,10 +4,21 @@ const FrameHelper = require('../util/frameHelper');
 const database = require('../database/database');
 
 class GameMonitor {
-    constructor(page) {
+    constructor(page, config) {
         this.page = page;
-        this.previousAppBubbleValue = null;
-        this.shouldBet = false;
+        this.config = config;
+        this.strategy = new BettingStrategy({
+            initialBet: 1.00,
+            maxBet: 100.00,
+            minBet: 1.00,
+            targetMultiplier: 1.50,
+            stopLoss: 50.00,
+            takeProfit: 100.00,
+            martingaleMultiplier: 2
+        });
+        this.statsTracker = new StatsTracker();
+        this.betManager = new BetManager(config, this.strategy, this.statsTracker);
+        this.previousMultiplier = null;
     }
 
     async getGameValues(frame) {
@@ -60,30 +71,32 @@ class GameMonitor {
         try {
             const frame = await FrameHelper.waitForSelectorInFrames(
                 this.page,
-                config.SELECTORS.GAME.BUBBLE_MULTIPLIER
+                this.config.SELECTORS.GAME.BUBBLE_MULTIPLIER
             );
 
             const { bubbleValue, formattedBalance } = await this.getGameValues(frame);
 
-            logger.info(`Current multiplier: ${bubbleValue}x | Balance: ${formattedBalance}`);
-
-            this.shouldBet = bubbleValue < config.GAME.MULTIPLIER_THRESHOLD &&
-                bubbleValue !== this.previousAppBubbleValue;
-
-            if (this.shouldBet) {
-                logger.info('Betting condition met - attempting to place bet');
-                const betPlaced = await this.placeBet(frame);
-                if (betPlaced) {
-                    logger.info('Bet successfully placed');
-                }
-            } else {
-                logger.debug('Waiting for favorable conditions');
+            // If multiplier changed from a higher value to null/0, it means game crashed
+            if (this.previousMultiplier && (!bubbleValue || bubbleValue === 0)) {
+                this.betManager.handleGameCrash(this.previousMultiplier);
             }
 
-            // Save to database if enabled
-            // await database.saveBubbleValue(bubbleValue);
+            if (bubbleValue) {
+                await this.betManager.checkCashout(frame);
+            } else if (!this.betManager.isWaitingForResult && this.betManager.shouldContinueTrading()) {
+                await this.betManager.placeBet(frame);
+            }
 
-            this.previousAppBubbleValue = bubbleValue;
+            this.previousMultiplier = bubbleValue;
+
+            // Log status
+            const stats = this.statsTracker.getStats();
+            logger.info(
+                `Multiplier: ${bubbleValue}x | Balance: ${formattedBalance} | ` +
+                `Profit: ${stats.netProfit.toFixed(2)} | ` +
+                `Win Rate: ${stats.winRate.toFixed(1)}% | ` +
+                `Trades: ${stats.totalTrades}`
+            );
 
         } catch (error) {
             logger.error(`Game monitoring error: ${error.message}`);
