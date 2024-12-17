@@ -39,7 +39,7 @@ const config = {
             stopLoss: 20.00,
             takeProfit: 40.00,
             martingaleMultiplier: 1.5,
-            averageMultiplierThreshold: 1.20
+            averageMultiplierThreshold: 1.50
         },
         MODERATE: {
             initialBet: 2.00,
@@ -49,7 +49,7 @@ const config = {
             stopLoss: 50.00,
             takeProfit: 100.00,
             martingaleMultiplier: 2,
-            averageMultiplierThreshold: 1.50
+            averageMultiplierThreshold: 2.00
         },
         AGGRESSIVE: {
             initialBet: 5.00,
@@ -59,7 +59,7 @@ const config = {
             stopLoss: 100.00,
             takeProfit: 300.00,
             martingaleMultiplier: 2.5,
-            averageMultiplierThreshold: 1.80
+            averageMultiplierThreshold: 3.00
         }
     }
 };

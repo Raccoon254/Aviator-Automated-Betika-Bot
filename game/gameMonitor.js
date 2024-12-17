@@ -89,33 +89,16 @@ class GameMonitor {
             const gameState = await this.getGameState(frame);
             if (!gameState) return;
 
-            // Calculate average multiplier including the current game if it's finished
-            let avgMultiplier;
-            if (gameState.multiplier === 0 || gameState.multiplier === null) {
-                // Game is starting - use just the history
-                avgMultiplier = this.calculateAverageMultiplier();
-            } else {
-                // Include current game in average
-                const currentHistory = [...this.multiplierHistory];
-                currentHistory.unshift(gameState.multiplier);
-                if (currentHistory.length > this.historySize) {
-                    currentHistory.pop();
-                }
-                avgMultiplier = currentHistory.reduce((acc, val) => acc + val, 0) / currentHistory.length;
-            }
-
-            const averageThreshold = this.strategy.averageMultiplierThreshold;
-
-            logger.info(`Current multiplier: ${gameState.multiplier}x | Average multiplier: ${avgMultiplier.toFixed(2)}x and threshold: ${averageThreshold}`);
-
             // Detect game end based on multiplier change
             if (this.isGameEnd(gameState.multiplier)) {
                 logger.info(`Game ended at ${this.previousMultiplier}x, new game starting at ${gameState.multiplier}x`);
+
+                // Handle bet result first
                 if (this.betManager.isWaitingForResult) {
                     this.betManager.handleGameCrash(this.previousMultiplier);
                 }
 
-                // Update history after game ends
+                // Update history with the completed game
                 if (this.previousMultiplier) {
                     this.multiplierHistory.unshift(this.previousMultiplier);
                     if (this.multiplierHistory.length > this.historySize) {
@@ -129,15 +112,28 @@ class GameMonitor {
                 this.gameState.betPlaced = false;
             }
 
-            // Check if we should place a bet with new conditions
-            if (gameState.betButton.exists &&
+            // Calculate average including current game's multiplier
+            let currentHistory = [...this.multiplierHistory];
+            if (gameState.multiplier) {
+                currentHistory.unshift(gameState.multiplier);
+                if (currentHistory.length > this.historySize) {
+                    currentHistory.pop();
+                }
+            }
+            const avgMultiplier = currentHistory.reduce((acc, val) => acc + val, 0) / currentHistory.length;
+            const averageThreshold = this.strategy.averageMultiplierThreshold;
+
+            logger.info(`Current game: ${gameState.multiplier}x | History: [${currentHistory.join(', ')}] | Average: ${avgMultiplier.toFixed(2)}x vs threshold: ${averageThreshold}`);
+
+            // Check if we should place a bet based on current conditions
+            if (!this.gameState.betPlaced &&
+                gameState.betButton.exists &&
                 gameState.betButton.visible &&
                 !gameState.betButton.disabled &&
-                !this.gameState.betPlaced &&
-                this.multiplierHistory.length >= (this.historySize - 1) && // Changed condition
+                this.multiplierHistory.length >= (this.historySize - 1) &&
                 avgMultiplier <= averageThreshold) {
 
-                logger.info(`Bet opportunity detected (Avg multiplier: ${avgMultiplier.toFixed(2)} <= ${averageThreshold})`);
+                logger.info(`Bet opportunity detected (Avg: ${avgMultiplier.toFixed(2)} <= ${averageThreshold})`);
                 const success = await this.betManager.placeBet(this.page);
                 if (success) {
                     this.gameState.betPlaced = true;
@@ -162,17 +158,6 @@ class GameMonitor {
                 `Trades: ${stats.totalTrades} | ` +
                 `Can Bet: ${gameState.betButton.exists && !this.gameState.betPlaced}`
             );
-
-            // Debug logging
-            logger.debug(`Game State: ${JSON.stringify({
-                currentMultiplier: gameState.multiplier,
-                previousMultiplier: this.previousMultiplier,
-                multiplierHistory: this.multiplierHistory,
-                averageMultiplier: avgMultiplier,
-                betPlaced: this.gameState.betPlaced,
-                inProgress: this.gameState.inProgress,
-                canBet: gameState.betButton.exists && !this.gameState.betPlaced
-            })}`);
 
         } catch (error) {
             logger.error(`Game monitoring error: ${error.message}`);
