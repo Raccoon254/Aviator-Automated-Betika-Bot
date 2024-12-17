@@ -27,3 +27,5 @@ const config = {
         database: 'aviatorBot'
     }
 };
+
+module.exports = config;
