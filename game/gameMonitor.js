@@ -1,10 +1,9 @@
-const config = require('../util/config');
 const logger = require('../util/logger');
 const FrameHelper = require('../util/frameHelper');
-const database = require('../database/database');
 const BettingStrategy = require('./strategies');
 const StatsTracker = require('./statsTracker');
 const BetManager = require('./betManager');
+const {SELECTORS, GAME} = require("../util/config");
 
 class GameMonitor {
     constructor(page, config) {
@@ -30,7 +29,7 @@ class GameMonitor {
             const latestBubbleMultiplier = bubbleMultipliers[0];
             const value = latestBubbleMultiplier ? latestBubbleMultiplier.textContent.trim() : null;
             return value ? parseFloat(value.slice(0, -1)) : null;
-        }, config.SELECTORS.GAME.BUBBLE_MULTIPLIER);
+        }, SELECTORS.GAME.BUBBLE_MULTIPLIER);
 
         const balance = await frame.evaluate((selector) => {
             const balanceElement = document.querySelector(selector);
@@ -43,7 +42,7 @@ class GameMonitor {
             // Remove all commas and convert to float
             const cleanBalance = balanceText.replace(/,/g, '');
             return parseFloat(cleanBalance);
-        }, config.SELECTORS.GAME.BALANCE);
+        }, SELECTORS.GAME.BALANCE);
 
         // Format balance to 2 decimal places for logging
         const formattedBalance = balance ? balance.toFixed(2) : '0.00';
@@ -63,7 +62,7 @@ class GameMonitor {
 
             const { bubbleValue, formattedBalance } = await this.getGameValues(frame);
 
-            // If multiplier changed from a higher value to null/0, it means game crashed
+            // If multiplier changed from a higher value to null/0, it means the game crashed
             if (this.previousMultiplier && (!bubbleValue || bubbleValue === 0)) {
                 this.betManager.handleGameCrash(this.previousMultiplier);
             }
@@ -91,7 +90,7 @@ class GameMonitor {
     }
 
     startMonitoring() {
-        setInterval(() => this.monitorGame(), config.GAME.POLLING_INTERVAL);
+        setInterval(() => this.monitorGame(), GAME.POLLING_INTERVAL);
     }
 }
 
