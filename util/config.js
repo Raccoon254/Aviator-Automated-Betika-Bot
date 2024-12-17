@@ -17,7 +17,9 @@ const config = {
         GAME: {
             BUBBLE_MULTIPLIER: '.payouts-wrapper .bubble-multiplier',
             BALANCE: '.balance .amount',
-            BET_BUTTON: 'div.buttons-block > button.btn.btn-success.bet.ng-star-inserted'
+            BET_BUTTON: 'div.buttons-block > button.btn.btn-success.bet.ng-star-inserted',
+            CASHOUT_BUTTON: 'button.btn.btn-warning.cashout',
+            BET_INPUT: 'input[inputmode="decimal"]'
         }
     },
     DATABASE: {
@@ -25,6 +27,35 @@ const config = {
         user: 'root',
         password: '',
         database: 'aviatorBot'
+    },
+    BETTING_STRATEGIES: {
+        CONSERVATIVE: {
+            initialBet: 1.00,
+            maxBet: 50.00,
+            minBet: 1.00,
+            targetMultiplier: 1.20,
+            stopLoss: 20.00,
+            takeProfit: 40.00,
+            martingaleMultiplier: 1.5
+        },
+        MODERATE: {
+            initialBet: 2.00,
+            maxBet: 100.00,
+            minBet: 1.00,
+            targetMultiplier: 1.50,
+            stopLoss: 50.00,
+            takeProfit: 100.00,
+            martingaleMultiplier: 2
+        },
+        AGGRESSIVE: {
+            initialBet: 5.00,
+            maxBet: 200.00,
+            minBet: 1.00,
+            targetMultiplier: 2.00,
+            stopLoss: 100.00,
+            takeProfit: 300.00,
+            martingaleMultiplier: 2.5
+        }
     }
 };
 
