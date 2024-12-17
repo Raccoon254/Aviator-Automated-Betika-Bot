@@ -7,7 +7,14 @@
     "test": "node index.js",
     "start": "node mozzart.js"
   },
-  "keywords": ["betting", "betika", "aviatorbot", "automation", "bettingbot", "bettingautomation"],
+  "keywords": [
+    "betting",
+    "betika",
+    "aviatorbot",
+    "automation",
+    "bettingbot",
+    "bettingautomation"
+  ],
   "author": "raccoon",
   "license": "ISC",
   "dependencies": {
@@ -22,6 +29,7 @@
     "puppeteer": "^19.8.5",
     "puppeteer-core": "^22.3.0",
     "python-shell": "^5.0.0",
-    "socket.io": "^4.6.1"
+    "socket.io": "^4.6.1",
+    "winston": "^3.17.0"
   }
 }
