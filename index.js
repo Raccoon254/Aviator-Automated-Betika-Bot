@@ -1,7 +1,8 @@
 const puppeteer = require('puppeteer');
 const config = require('./util/config');
 const logger = require('./util/logger');
-const { GameMonitor, BettingStrategy } = require('./game/gameMonitor');
+const GameMonitor = require('./game/gameMonitor');
+const BettingStrategy = require('./game/strategies');
 const database = require('./database/database');
 const readline = require('readline');
 

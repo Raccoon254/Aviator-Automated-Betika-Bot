@@ -12,7 +12,11 @@ class BettingStrategy {
         this.consecutiveWins = 0;
     }
 
-    calculateNextBet(lastResult) {
+    calculateNextBet(lastResult = null) {
+        if (!lastResult) {
+            return this.initialBet; // First bet
+        }
+
         if (lastResult.won) {
             this.consecutiveWins++;
             this.consecutiveLosses = 0;
@@ -33,6 +37,10 @@ class BettingStrategy {
             stats.totalProfit >= this.takeProfit ||
             this.consecutiveLosses >= 5
         );
+    }
+
+    shouldBet(currentMultiplier) {
+        return currentMultiplier === null || currentMultiplier === 0;
     }
 }
 

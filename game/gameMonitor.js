@@ -62,15 +62,20 @@ class GameMonitor {
 
             const { bubbleValue, formattedBalance } = await this.getGameValues(frame);
 
-            // If multiplier changed from a higher value to null/0, it means the game crashed
+            // If multiplier changed from a higher value to null/0, it means game crashed
             if (this.previousMultiplier && (!bubbleValue || bubbleValue === 0)) {
                 this.betManager.handleGameCrash(this.previousMultiplier);
             }
 
-            if (bubbleValue) {
+            // Check if we should place a bet (when multiplier is null/0 meaning game is starting)
+            if (this.strategy.shouldBet(bubbleValue) && !this.betManager.isWaitingForResult) {
+                logger.info('Attempting to place bet...');
+                const betPlaced = await this.betManager.placeBet(frame);
+                if (betPlaced) {
+                    logger.info('Bet placed successfully');
+                }
+            } else if (bubbleValue) {
                 await this.betManager.checkCashout(frame);
-            } else if (!this.betManager.isWaitingForResult && this.betManager.shouldContinueTrading()) {
-                await this.betManager.placeBet(frame);
             }
 
             this.previousMultiplier = bubbleValue;
@@ -78,7 +83,7 @@ class GameMonitor {
             // Log status
             const stats = this.statsTracker.getStats();
             logger.info(
-                `Multiplier: ${bubbleValue}x | Balance: ${formattedBalance} | ` +
+                `Multiplier: ${bubbleValue || 0}x | Balance: ${formattedBalance} | ` +
                 `Profit: ${stats.netProfit.toFixed(2)} | ` +
                 `Win Rate: ${stats.winRate.toFixed(1)}% | ` +
                 `Trades: ${stats.totalTrades}`

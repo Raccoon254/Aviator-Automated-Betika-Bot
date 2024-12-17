@@ -6,7 +6,14 @@ const config = {
     },
     GAME: {
         POLLING_INTERVAL: 4000,
-        MULTIPLIER_THRESHOLD: 1.50
+        MULTIPLIER_THRESHOLD: 1.50,
+        SELECTORS: {
+            BUBBLE_MULTIPLIER: '.payouts-wrapper .bubble-multiplier',
+            BALANCE: '.balance .amount',
+            BET_BUTTON: 'button.btn.btn-success.bet:not(.ng-star-inserted)', // Updated selector
+            CASHOUT_BUTTON: 'button.btn.btn-warning.cashout',
+            BET_INPUT: 'input[inputmode="decimal"]'
+        }
     },
     SELECTORS: {
         INITIAL: {
