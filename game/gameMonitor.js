@@ -2,6 +2,9 @@ const config = require('../util/config');
 const logger = require('../util/logger');
 const FrameHelper = require('../util/frameHelper');
 const database = require('../database/database');
+const BettingStrategy = require('./strategies');
+const StatsTracker = require('./statsTracker');
+const BetManager = require('./betManager');
 
 class GameMonitor {
     constructor(page, config) {
@@ -49,22 +52,6 @@ class GameMonitor {
             balance,
             formattedBalance
         };
-    }
-
-    async placeBet(frame) {
-        const betPlaced = await frame.evaluate((selector) => {
-            const betButton = document.querySelector(selector);
-            if (betButton) {
-                const buttonText = betButton.textContent.trim().toLowerCase();
-                if (buttonText !== 'cancel') {
-                    betButton.click();
-                    return true;
-                }
-            }
-            return false;
-        }, config.SELECTORS.GAME.BET_BUTTON);
-
-        return betPlaced;
     }
 
     async monitorGame() {
