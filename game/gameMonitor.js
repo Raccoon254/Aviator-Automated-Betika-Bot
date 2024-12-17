@@ -89,27 +89,52 @@ class GameMonitor {
             const gameState = await this.getGameState(frame);
             if (!gameState) return;
 
+            // Calculate average multiplier including the current game if it's finished
+            let avgMultiplier;
+            if (gameState.multiplier === 0 || gameState.multiplier === null) {
+                // Game is starting - use just the history
+                avgMultiplier = this.calculateAverageMultiplier();
+            } else {
+                // Include current game in average
+                const currentHistory = [...this.multiplierHistory];
+                currentHistory.unshift(gameState.multiplier);
+                if (currentHistory.length > this.historySize) {
+                    currentHistory.pop();
+                }
+                avgMultiplier = currentHistory.reduce((acc, val) => acc + val, 0) / currentHistory.length;
+            }
+
+            const averageThreshold = this.strategy.averageMultiplierThreshold;
+
+            logger.info(`Current multiplier: ${gameState.multiplier}x | Average multiplier: ${avgMultiplier.toFixed(2)}x and threshold: ${averageThreshold}`);
+
             // Detect game end based on multiplier change
             if (this.isGameEnd(gameState.multiplier)) {
                 logger.info(`Game ended at ${this.previousMultiplier}x, new game starting at ${gameState.multiplier}x`);
                 if (this.betManager.isWaitingForResult) {
                     this.betManager.handleGameCrash(this.previousMultiplier);
                 }
+
+                // Update history after game ends
+                if (this.previousMultiplier) {
+                    this.multiplierHistory.unshift(this.previousMultiplier);
+                    if (this.multiplierHistory.length > this.historySize) {
+                        this.multiplierHistory.pop();
+                    }
+                    logger.info(`Updated multiplier history: [${this.multiplierHistory.join(', ')}]`);
+                }
+
                 this.gameState.inProgress = false;
                 this.gameState.lastCrashPoint = this.previousMultiplier;
                 this.gameState.betPlaced = false;
             }
-
-            // Calculate average multiplier
-            const avgMultiplier = this.calculateAverageMultiplier();
-            const averageThreshold = this.strategy.averageMultiplierThreshold;
 
             // Check if we should place a bet with new conditions
             if (gameState.betButton.exists &&
                 gameState.betButton.visible &&
                 !gameState.betButton.disabled &&
                 !this.gameState.betPlaced &&
-                this.multiplierHistory.length >= this.historySize &&
+                this.multiplierHistory.length >= (this.historySize - 1) && // Changed condition
                 avgMultiplier <= averageThreshold) {
 
                 logger.info(`Bet opportunity detected (Avg multiplier: ${avgMultiplier.toFixed(2)} <= ${averageThreshold})`);
