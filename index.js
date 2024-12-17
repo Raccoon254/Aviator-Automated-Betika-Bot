@@ -1,8 +1,8 @@
 const puppeteer = require('puppeteer');
-const config = require('util/config');
-const logger = require('util/logger');
-const GameMonitor = require('util/gameMonitor');
-const database = require('database/database');
+const config = require('./util/config');
+const logger = require('./util/logger');
+const GameMonitor = require('./game/gameMonitor');
+const database = require('./database/database');
 
 async function initializeBrowser() {
     const browser = await puppeteer.launch({ headless: false });

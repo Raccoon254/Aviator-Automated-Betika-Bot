@@ -20,15 +20,28 @@ class GameMonitor {
 
         const balance = await frame.evaluate((selector) => {
             const balanceElement = document.querySelector(selector);
-            const balanceText = balanceElement ? balanceElement.textContent.trim() : null;
-            return balanceText ? parseFloat(balanceText) : null;
+            if (!balanceElement) return null;
+
+            // Get the text content and clean it up
+            const balanceText = balanceElement.textContent.trim();
+            if (!balanceText) return null;
+
+            // Remove all commas and convert to float
+            const cleanBalance = balanceText.replace(/,/g, '');
+            return parseFloat(cleanBalance);
         }, config.SELECTORS.GAME.BALANCE);
 
-        return { bubbleValue, balance };
+        // Format balance to 2 decimal places for logging
+        const formattedBalance = balance ? balance.toFixed(2) : '0.00';
+        return {
+            bubbleValue,
+            balance,
+            formattedBalance
+        };
     }
 
     async placeBet(frame) {
-        await frame.evaluate((selector) => {
+        const betPlaced = await frame.evaluate((selector) => {
             const betButton = document.querySelector(selector);
             if (betButton) {
                 const buttonText = betButton.textContent.trim().toLowerCase();
@@ -39,6 +52,8 @@ class GameMonitor {
             }
             return false;
         }, config.SELECTORS.GAME.BET_BUTTON);
+
+        return betPlaced;
     }
 
     async monitorGame() {
@@ -48,9 +63,9 @@ class GameMonitor {
                 config.SELECTORS.GAME.BUBBLE_MULTIPLIER
             );
 
-            const { bubbleValue, balance } = await this.getGameValues(frame);
+            const { bubbleValue, formattedBalance } = await this.getGameValues(frame);
 
-            logger.info(`Current multiplier: ${bubbleValue}x | Balance: ${balance}`);
+            logger.info(`Current multiplier: ${bubbleValue}x | Balance: ${formattedBalance}`);
 
             this.shouldBet = bubbleValue < config.GAME.MULTIPLIER_THRESHOLD &&
                 bubbleValue !== this.previousAppBubbleValue;
