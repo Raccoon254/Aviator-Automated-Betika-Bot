@@ -10,6 +10,7 @@ class BettingStrategy {
         this.martingaleMultiplier = config.martingaleMultiplier || 2;
         this.consecutiveLosses = 0;
         this.consecutiveWins = 0;
+        this.averageMultiplierThreshold = config.averageMultiplierThreshold;
     }
 
     calculateNextBet(lastResult = null) {

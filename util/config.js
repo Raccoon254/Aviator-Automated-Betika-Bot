@@ -6,7 +6,8 @@ const config = {
     },
     GAME: {
         POLLING_INTERVAL: 4000,
-        MULTIPLIER_THRESHOLD: 1.50
+        MULTIPLIER_THRESHOLD: 1.50,
+        HISTORY_SIZE: 3  // Number of previous games to consider for average multiplier
     },
     SELECTORS: {
         INITIAL: {
@@ -37,7 +38,8 @@ const config = {
             targetMultiplier: 1.20,
             stopLoss: 20.00,
             takeProfit: 40.00,
-            martingaleMultiplier: 1.5
+            martingaleMultiplier: 1.5,
+            averageMultiplierThreshold: 1.20
         },
         MODERATE: {
             initialBet: 2.00,
@@ -46,7 +48,8 @@ const config = {
             targetMultiplier: 1.50,
             stopLoss: 50.00,
             takeProfit: 100.00,
-            martingaleMultiplier: 2
+            martingaleMultiplier: 2,
+            averageMultiplierThreshold: 1.50
         },
         AGGRESSIVE: {
             initialBet: 5.00,
@@ -55,7 +58,8 @@ const config = {
             targetMultiplier: 2.00,
             stopLoss: 100.00,
             takeProfit: 300.00,
-            martingaleMultiplier: 2.5
+            martingaleMultiplier: 2.5,
+            averageMultiplierThreshold: 1.80
         }
     }
 };
