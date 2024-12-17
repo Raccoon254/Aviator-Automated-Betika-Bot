@@ -1,56 +1,72 @@
-const logger = require('../util/logger');
-const FrameHelper = require('../util/frameHelper');
-const BettingStrategy = require('./strategies');
-const StatsTracker = require('./statsTracker');
-const BetManager = require('./betManager');
-const {SELECTORS, GAME} = require("../util/config");
+const BettingStrategy = require("./strategies");
+const StatsTracker = require("./statsTracker");
+const BetManager = require("./betManager");
+const FrameHelper = require("../util/frameHelper");
+const logger = require("../util/logger");
 
 class GameMonitor {
     constructor(page, config) {
         this.page = page;
         this.config = config;
-        this.strategy = new BettingStrategy({
-            initialBet: 1.00,
-            maxBet: 100.00,
-            minBet: 1.00,
-            targetMultiplier: 1.50,
-            stopLoss: 50.00,
-            takeProfit: 100.00,
-            martingaleMultiplier: 2
-        });
+        this.strategy = new BettingStrategy(config.BETTING_STRATEGIES.AGGRESSIVE);
         this.statsTracker = new StatsTracker();
         this.betManager = new BetManager(config, this.strategy, this.statsTracker);
         this.previousMultiplier = null;
+        this.lastMultiplierList = []; // Keep track of last few multipliers
+        this.gameState = {
+            inProgress: false,
+            lastCrashPoint: null,
+            betPlaced: false
+        };
     }
 
-    async getGameValues(frame) {
-        const bubbleValue = await frame.evaluate((selector) => {
-            const bubbleMultipliers = document.querySelectorAll(selector);
-            const latestBubbleMultiplier = bubbleMultipliers[0];
-            const value = latestBubbleMultiplier ? latestBubbleMultiplier.textContent.trim() : null;
-            return value ? parseFloat(value.slice(0, -1)) : null;
-        }, SELECTORS.GAME.BUBBLE_MULTIPLIER);
+    isGameEnd(currentMultiplier) {
+        if (!currentMultiplier || !this.previousMultiplier) return false;
 
-        const balance = await frame.evaluate((selector) => {
-            const balanceElement = document.querySelector(selector);
-            if (!balanceElement) return null;
+        // If current multiplier is different from previous, game has ended
+        return currentMultiplier !== this.previousMultiplier;
+    }
 
-            // Get the text content and clean it up
-            const balanceText = balanceElement.textContent.trim();
-            if (!balanceText) return null;
+    async getGameState(frame) {
+        try {
+            // Get multiplier value
+            const bubbleValue = await frame.evaluate((selector) => {
+                const bubbleMultipliers = document.querySelectorAll(selector);
+                const latestBubbleMultiplier = bubbleMultipliers[0];
+                if (!latestBubbleMultiplier) return null;
+                const value = latestBubbleMultiplier.textContent.trim();
+                return value ? parseFloat(value.slice(0, -1)) : null;
+            }, this.config.SELECTORS.GAME.BUBBLE_MULTIPLIER);
 
-            // Remove all commas and convert to float
-            const cleanBalance = balanceText.replace(/,/g, '');
-            return parseFloat(cleanBalance);
-        }, SELECTORS.GAME.BALANCE);
+            // Check for bet button
+            const betButton = await frame.evaluate((selector) => {
+                const button = document.querySelector(selector);
+                if (!button) return { exists: false };
+                const boundingBox = button.getBoundingClientRect();
+                return {
+                    exists: true,
+                    text: button.textContent.trim().toLowerCase(),
+                    disabled: button.disabled || false,
+                    visible: boundingBox.width > 0 && boundingBox.height > 0
+                };
+            }, this.config.SELECTORS.GAME.BET_BUTTON);
 
-        // Format balance to 2 decimal places for logging
-        const formattedBalance = balance ? balance.toFixed(2) : '0.00';
-        return {
-            bubbleValue,
-            balance,
-            formattedBalance
-        };
+            // Get balance
+            const balance = await frame.evaluate((selector) => {
+                const el = document.querySelector(selector);
+                return el ? parseFloat(el.textContent.replace(/,/g, '')) : null;
+            }, this.config.SELECTORS.GAME.BALANCE);
+
+            return {
+                multiplier: bubbleValue,
+                betButton,
+                balance,
+                formattedBalance: balance ? balance.toFixed(2) : '0.00'
+            };
+        } catch (error) {
+            logger.error(`Error getting game state: ${error.message}`);
+            return null;
+        }
     }
 
     async monitorGame() {
@@ -60,34 +76,57 @@ class GameMonitor {
                 this.config.SELECTORS.GAME.BUBBLE_MULTIPLIER
             );
 
-            const { bubbleValue, formattedBalance } = await this.getGameValues(frame);
+            const gameState = await this.getGameState(frame);
+            if (!gameState) return;
 
-            // If multiplier changed from a higher value to null/0, it means game crashed
-            if (this.previousMultiplier && (!bubbleValue || bubbleValue === 0)) {
-                this.betManager.handleGameCrash(this.previousMultiplier);
+            // Detect game end based on multiplier change
+            if (this.isGameEnd(gameState.multiplier)) {
+                logger.info(`Game ended at ${this.previousMultiplier}x, new game starting at ${gameState.multiplier}x`);
+                if (this.betManager.isWaitingForResult) {
+                    this.betManager.handleGameCrash(this.previousMultiplier);
+                }
+                this.gameState.inProgress = false;
+                this.gameState.lastCrashPoint = this.previousMultiplier;
+                this.gameState.betPlaced = false;
             }
 
-            // Check if we should place a bet (when multiplier is null/0 meaning game is starting)
-            if (this.strategy.shouldBet(bubbleValue) && !this.betManager.isWaitingForResult) {
-                logger.info('Attempting to place bet...');
-                const betPlaced = await this.betManager.placeBet(frame);
-                if (betPlaced) {
-                    logger.info('Bet placed successfully');
+            // Check if we should place a bet (when bet button is available and we haven't bet yet)
+            if (gameState.betButton.exists && gameState.betButton.visible &&
+                !gameState.betButton.disabled && !this.gameState.betPlaced) {
+                logger.info('Bet opportunity detected');
+                const success = await this.betManager.placeBet(this.page);
+                if (success) {
+                    this.gameState.betPlaced = true;
+                    this.gameState.inProgress = true;
                 }
-            } else if (bubbleValue) {
+            }
+
+            // Check for cashout if we have an active bet
+            if (this.betManager.isWaitingForResult && gameState.multiplier) {
                 await this.betManager.checkCashout(frame);
             }
 
-            this.previousMultiplier = bubbleValue;
+            this.previousMultiplier = gameState.multiplier;
 
             // Log status
             const stats = this.statsTracker.getStats();
             logger.info(
-                `Multiplier: ${bubbleValue || 0}x | Balance: ${formattedBalance} | ` +
+                `Multiplier: ${gameState.multiplier || 0}x | ` +
+                `Balance: ${gameState.formattedBalance} | ` +
                 `Profit: ${stats.netProfit.toFixed(2)} | ` +
                 `Win Rate: ${stats.winRate.toFixed(1)}% | ` +
-                `Trades: ${stats.totalTrades}`
+                `Trades: ${stats.totalTrades} | ` +
+                `Can Bet: ${gameState.betButton.exists && !this.gameState.betPlaced}`
             );
+
+            // Debug logging
+            logger.debug(`Game State: ${JSON.stringify({
+                currentMultiplier: gameState.multiplier,
+                previousMultiplier: this.previousMultiplier,
+                betPlaced: this.gameState.betPlaced,
+                inProgress: this.gameState.inProgress,
+                canBet: gameState.betButton.exists && !this.gameState.betPlaced
+            })}`);
 
         } catch (error) {
             logger.error(`Game monitoring error: ${error.message}`);
@@ -95,7 +134,8 @@ class GameMonitor {
     }
 
     startMonitoring() {
-        setInterval(() => this.monitorGame(), GAME.POLLING_INTERVAL);
+        logger.info('Starting game monitoring with aggressive strategy...');
+        setInterval(() => this.monitorGame(), this.config.GAME.POLLING_INTERVAL);
     }
 }
 

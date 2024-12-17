@@ -1,4 +1,5 @@
-const {debug, info, error} = require("../util/logger");
+const logger = require('../util/logger');
+const FrameHelper = require('../util/frameHelper');
 
 class BetManager {
     constructor(config, strategy, statsTracker) {
@@ -9,40 +10,45 @@ class BetManager {
         this.isWaitingForResult = false;
     }
 
-    async placeBet(frame) {
+    async placeBet(page) {
         if (this.isWaitingForResult) {
-            debug('Already waiting for result, skipping bet');
+            logger.debug('Already waiting for result, skipping bet');
             return false;
         }
 
-        const betAmount = this.strategy.calculateNextBet();
-        info(`Attempting to place bet of ${betAmount}`);
-
         try {
+            const frame = await FrameHelper.waitForSelectorInFrames(
+                page,
+                this.config.SELECTORS.GAME.BET_BUTTON
+            );
+
+            // Calculate bet amount
+            const betAmount = this.strategy.calculateNextBet();
+            logger.info(`Attempting to place bet of ${betAmount}`);
+
             // Set bet amount
-            const inputResult = await frame.evaluate((amount, selector) => {
+            await frame.evaluate(async (amount, selector) => {
                 const input = document.querySelector(selector);
-                if (input) {
-                    input.value = amount.toString();
-                    input.dispatchEvent(new Event('input', { bubbles: true }));
-                    return true;
-                }
-                return false;
+                if (!input) return false;
+
+                // Clear the input
+                input.value = '';
+                await new Promise(r => setTimeout(r, 100));
+
+                // Set new value
+                input.value = amount.toString();
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                return true;
             }, betAmount, this.config.SELECTORS.GAME.BET_INPUT);
 
-            if (!inputResult) {
-                error('Could not set bet amount');
-                return false;
-            }
+            // Wait for input to register
+            await page.waitForTimeout(200);
 
-            // Small delay to ensure input is registered
-            await frame.waitForTimeout(100);
-
-            // Click the bet button
+            // Click bet button
             const betPlaced = await frame.evaluate((selector) => {
                 const button = document.querySelector(selector);
-                if (button && !button.disabled &&
-                    button.textContent.toLowerCase().includes('bet')) {
+                if (button && !button.disabled && button.textContent.toLowerCase().includes('bet')) {
                     button.click();
                     return true;
                 }
@@ -56,14 +62,12 @@ class BetManager {
                     targetMultiplier: this.strategy.targetMultiplier
                 };
                 this.isWaitingForResult = true;
-                info(`Bet placed: ${betAmount}`);
-            } else {
-                error('Could not click bet button');
+                logger.info(`Successfully placed bet of ${betAmount}`);
             }
 
             return betPlaced;
         } catch (error) {
-            error(`Error placing bet: ${error.message}`);
+            logger.error(`Error placing bet: ${error.message}`);
             return false;
         }
     }
@@ -71,64 +75,68 @@ class BetManager {
     async checkCashout(frame) {
         if (!this.isWaitingForResult) return;
 
-        const cashoutInfo = await frame.evaluate((selector) => {
-            const button = document.querySelector(selector);
-            if (button && button.textContent.toLowerCase().includes('cash out')) {
-                const amountElement = button.querySelector('.amount span');
-                if (amountElement) {
-                    return {
-                        multiplier: parseFloat(amountElement.textContent),
-                        available: true
-                    };
-                }
-            }
-            return { available: false };
-        }, this.config.SELECTORS.GAME.CASHOUT_BUTTON);
+        try {
+            const multiplier = await frame.evaluate((selector) => {
+                const element = document.querySelector(selector);
+                return element ? parseFloat(element.textContent) : null;
+            }, this.config.SELECTORS.GAME.CASHOUT_MULTIPLIER);
 
-        if (cashoutInfo.available && cashoutInfo.multiplier >= this.strategy.targetMultiplier) {
-            await this.cashout(frame);
+            if (multiplier && multiplier >= this.strategy.targetMultiplier) {
+                logger.info(`Target multiplier reached: ${multiplier}x >= ${this.strategy.targetMultiplier}x`);
+                await this.executeCashout(frame);
+            }
+        } catch (error) {
+            logger.debug(`Cashout check: ${error.message}`);
         }
     }
 
-    async cashout(frame) {
-        const result = await frame.evaluate((selector) => {
-            const button = document.querySelector(selector);
-            if (button && button.textContent.toLowerCase().includes('cash out')) {
-                button.click();
-                return true;
-            }
-            return false;
-        }, this.config.SELECTORS.GAME.CASHOUT_BUTTON);
+    async executeCashout(frame) {
+        try {
+            const result = await frame.evaluate((selector) => {
+                const button = document.querySelector(selector);
+                if (button) {
+                    button.click();
+                    return true;
+                }
+                return false;
+            }, this.config.SELECTORS.GAME.CASHOUT_BUTTON);
 
-        if (result) {
-            const profit = this.currentBet.amount * (this.strategy.targetMultiplier - 1);
-            this.statsTracker.addTrade({
-                betAmount: this.currentBet.amount,
-                multiplier: this.strategy.targetMultiplier,
-                profit: profit,
-                loss: 0,
-                timestamp: Date.now()
-            });
-            this.isWaitingForResult = false;
+            if (result) {
+                const profit = this.currentBet.amount * (this.strategy.targetMultiplier - 1);
+                logger.info(`Cashout successful! Profit: ${profit.toFixed(2)}`);
+
+                this.statsTracker.addTrade({
+                    betAmount: this.currentBet.amount,
+                    multiplier: this.strategy.targetMultiplier,
+                    profit: profit,
+                    loss: 0,
+                    timestamp: Date.now(),
+                    won: true
+                });
+                this.isWaitingForResult = false;
+                this.currentBet = null;
+            }
+        } catch (error) {
+            logger.error(`Error executing cashout: ${error.message}`);
         }
     }
 
     handleGameCrash(multiplier) {
         if (this.isWaitingForResult && this.currentBet) {
+            logger.info(`Game crashed at ${multiplier}x - Lost bet of ${this.currentBet.amount}`);
+
             this.statsTracker.addTrade({
                 betAmount: this.currentBet.amount,
                 multiplier: multiplier,
                 profit: 0,
                 loss: -this.currentBet.amount,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                won: false
             });
-            this.isWaitingForResult = false;
-        }
-    }
 
-    shouldContinueTrading() {
-        const stats = this.statsTracker.getStats();
-        return !this.strategy.shouldStopTrading(stats);
+            this.isWaitingForResult = false;
+            this.currentBet = null;
+        }
     }
 }
 

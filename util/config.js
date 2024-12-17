@@ -6,14 +6,7 @@ const config = {
     },
     GAME: {
         POLLING_INTERVAL: 4000,
-        MULTIPLIER_THRESHOLD: 1.50,
-        SELECTORS: {
-            BUBBLE_MULTIPLIER: '.payouts-wrapper .bubble-multiplier',
-            BALANCE: '.balance .amount',
-            BET_BUTTON: 'button.btn.btn-success.bet:not(.ng-star-inserted)', // Updated selector
-            CASHOUT_BUTTON: 'button.btn.btn-warning.cashout',
-            BET_INPUT: 'input[inputmode="decimal"]'
-        }
+        MULTIPLIER_THRESHOLD: 1.50
     },
     SELECTORS: {
         INITIAL: {
@@ -25,8 +18,9 @@ const config = {
             BUBBLE_MULTIPLIER: '.payouts-wrapper .bubble-multiplier',
             BALANCE: '.balance .amount',
             BET_BUTTON: 'div.buttons-block > button.btn.btn-success.bet.ng-star-inserted',
-            CASHOUT_BUTTON: 'button.btn.btn-warning.cashout',
-            BET_INPUT: 'input[inputmode="decimal"]'
+            CASHOUT_BUTTON: 'button.cashout.ng-star-inserted',
+            BET_INPUT: 'input[inputmode="decimal"]',
+            CASHOUT_MULTIPLIER: '.amount span:first-child'
         }
     },
     DATABASE: {
