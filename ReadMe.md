@@ -282,4 +282,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
 
 ---
-Made with ❤️ by [Raccoon254](https://github.com/raccoon254)
+Made with ❤️ by [Raccoon254](https://www.kentom.co.ke/)
