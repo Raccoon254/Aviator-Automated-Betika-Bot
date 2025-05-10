@@ -2,7 +2,7 @@
 
 ## ⚠️ Disclaimer
 
-Please dont message me requesting me to create a bot for free or requesting me to help you configure the bot, Im am normally bery busy and I made this opensource for you guys to help me develop it, not me to help you!!
+Please dont message me requesting me to create a bot for free or requesting me to help you configure the bot, Im am normally very busy and I made this opensource for you guys to help me develop it, not me to help you!!
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D%2014.0.0-brightgreen.svg)](https://nodejs.org/)
